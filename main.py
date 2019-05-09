@@ -45,10 +45,23 @@ if __name__ == "__main__":
     binary_image = generate_binary_image(greyscale_image, 40)
 
     pixel_clusters = pixel_clusters_from(binary_image)
+    cluster_centers = []
 
-    for _, cluster in pixel_clusters.items():
-        for pixel in cluster:
-            resized_image[pixel[0], pixel[1]] = [0, 0, 255]
+    for _, cluster in list(pixel_clusters.items())[0:2]:
+        cluster_centers.append(np.add(cluster[0], cluster[len(cluster) - 1]) / 2)
+
+    xPan = 10
+    yPan = 10
+
+    for pixel in cluster_centers:
+        center_x = np.int(pixel[0])
+        center_y = np.int(pixel[1])
+        for x in range(center_x - xPan, center_x + xPan + 1):
+            for y in range(center_y - yPan, center_y + yPan + 1):
+                resized_image[x, y] = [0, 0, 255]
 
     cv2.imshow("Image", resized_image)
-    cv2.waitKey(0)
+    while(1):
+     key = cv2.waitKey(0)
+     if key == ord('q'):
+         break
