@@ -4,6 +4,7 @@ import copy
 import os
 
 DATA_FOLDER = "data"
+OUTPUT_FOLDER = "output"
 
 def resize_image(image, width=400):
     original_height, original_width, _ = image.shape
@@ -33,6 +34,12 @@ def pixel_clusters_from(binary_image):
             current_cluster += 1
             clusters[current_cluster] = [p]
     return clusters
+
+
+def make_transparent(image, alpha=255):
+    b_channel, g_channel, r_channel = cv2.split(image)
+    alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * alpha
+    return cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
 
 def generate_transformation(a11, a12, a13, a21, a22, a23):
     return np.matrix([[a11, a12, a13],
@@ -71,13 +78,16 @@ def map_eyes(binary_image, original_image):
     #     center_y = np.int(pixel[0])
     #     for x in range(center_x - x_pan, center_x + x_pan + 1):
     #         for y in range(center_y - y_pan, center_y + y_pan + 1):
-    #             original_image[x, y] = [0, 0, 255]
+    #             original_image[x, y] = [0, 0, 255, 0]
     return cluster_centers
 
 if __name__ == "__main__":
+    if OUTPUT_FOLDER not in os.listdir('.'):
+        os.mkdir(OUTPUT_FOLDER)
+
     image = cv2.imread(os.path.join(DATA_FOLDER, "image_4.jpeg"))
 
-    resized_image = resize_image(image)
+    resized_image = make_transparent(resize_image(image))
     greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
     binary_image = generate_binary_image(greyscale_image, 40)
     eyes = map_eyes(binary_image, resized_image)
