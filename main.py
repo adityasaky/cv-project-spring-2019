@@ -81,7 +81,7 @@ def map_eyes(binary_image, original_image):
     pixel_clusters = get_pixel_clusters(binary_image)
     cluster_centers = []
     for _, cluster in list(pixel_clusters.items())[0:2]:
-        cluster_centers.append(np.add(cluster[0], cluster[len(cluster) - 1]) / 2)
+        cluster_centers.append((np.add(cluster[0], cluster[len(cluster) - 1]) / 2)[::-1])
 
     return cluster_centers
 
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         ts = 3
         tx = ts * (max_x - min_x) / 4
         ty = ts * (max_y - min_y) / 4
-        transformation = generate_transformation(2, 0, -tx, 0, 2, -ty)
+        transformation = generate_transformation(ts, 0, -tx, 0, ts, -ty)
 
         transformed_image[min_x:max_x, min_y:max_y] = apply_backward_mapping(eye_region, transformation)
         overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
