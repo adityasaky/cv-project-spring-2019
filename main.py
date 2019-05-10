@@ -41,10 +41,12 @@ def make_transparent(image, alpha=255):
     alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * alpha
     return cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
 
+
 def generate_transformation(a11, a12, a13, a21, a22, a23):
     return np.matrix([[a11, a12, a13],
                       [a21, a22, a23],
                       [0, 0, 1]])
+
 
 def apply_backward_mapping(image, transformation):
     transformation_inverse = np.linalg.pinv(transformation)
@@ -63,6 +65,16 @@ def apply_backward_mapping(image, transformation):
 
     return target_nn
 
+
+def draw_rectangle(image, center, transparency=0.4, colour=np.array([0, 0, 255, 255]), pan=[10, 10]):
+    image_clone = copy.deepcopy(image)
+    coordinate_1 = (center[1] - pan[0], center[0] - pan[1])
+    coordinate_2 = (center[1] + pan[0], center[0] + pan[1])
+    cv2.rectangle(image_clone, coordinate_1, coordinate_2, colour, thickness=-1)
+    cv2.addWeighted(image_clone, transparency, image, 1 - transparency, 0, image_clone)
+    return image_clone
+
+
 def map_eyes(binary_image, original_image):
     original_image = copy.deepcopy(original_image)
     pixel_clusters = pixel_clusters_from(binary_image)
@@ -80,6 +92,7 @@ def map_eyes(binary_image, original_image):
     #         for y in range(center_y - y_pan, center_y + y_pan + 1):
     #             original_image[x, y] = [0, 0, 255, 0]
     return cluster_centers
+
 
 if __name__ == "__main__":
     if OUTPUT_FOLDER not in os.listdir('.'):
@@ -108,7 +121,9 @@ if __name__ == "__main__":
         transformation = generate_transformation(2, 0, -tx, 0, 2, -ty)
 
         transformed_image[min_x:max_x, min_y:max_y] = apply_backward_mapping(eye_region, transformation)
+        overlaid_image = draw_rectangle(transformed_image, [np.int(eye[0]), np.int(eye[1])])
 
+    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_4.png"), overlaid_image)
     cv2.imshow("Image", transformed_image)
 
     while(1):
