@@ -51,6 +51,8 @@ def get_pixel_clusters(binary_image):
 # make_transparent accepts an image and an alpha value, and adds an alpha
 # dimension corresponding to the transparency of the image.
 def make_transparent(image, alpha=255):
+    if image.shape[2] != 3:
+        return image
     b_channel, g_channel, r_channel = cv2.split(image)
     alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * alpha
     return cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
