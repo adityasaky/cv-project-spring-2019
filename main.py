@@ -6,6 +6,7 @@ import os
 
 
 DATA_FOLDER = "data"
+OUTPUT_FOLDER = "output"
 
 
 def resize_image(image, width=400):
@@ -37,10 +38,21 @@ def pixel_clusters_from(binary_image):
             clusters[current_cluster] = [p]
     return clusters
 
+
+def make_transparent(image, alpha=255):
+    b_channel, g_channel, r_channel = cv2.split(image)
+    alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * alpha
+    return cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
+
+
 if __name__ == "__main__":
+    if OUTPUT_FOLDER not in os.listdir('.'):
+        os.mkdir(OUTPUT_FOLDER)
+
     image = cv2.imread(os.path.join(DATA_FOLDER, "image_4.jpeg"))
 
-    resized_image = resize_image(image)
+    resized_image = make_transparent(resize_image(image))
+    # resized_image = resize_image(image)
     greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
     binary_image = generate_binary_image(greyscale_image, 40)
 
@@ -58,8 +70,9 @@ if __name__ == "__main__":
         center_y = np.int(pixel[1])
         for x in range(center_x - x_pan, center_x + x_pan + 1):
             for y in range(center_y - y_pan, center_y + y_pan + 1):
-                resized_image[x, y] = [0, 0, 255]
+                resized_image[x, y] = [0, 0, 255, 40]
 
+    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_4.png"), resized_image)
     cv2.imshow("Image", resized_image)
     while(1):
      key = cv2.waitKey(0)
