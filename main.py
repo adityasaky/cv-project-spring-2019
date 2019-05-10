@@ -6,6 +6,12 @@ import os
 DATA_FOLDER = "data"
 OUTPUT_FOLDER = "output"
 
+# _make_coordinate is a helper function that allows us to sanely
+# transform a (row, col) value into (x, y) simply by reversing it.
+def _make_coordinate(point):
+    return point[::-1]
+
+
 # resize_image scales a passed image such that it has width 400px,
 # while maintaining aspect ratio.
 def resize_image(image, width=400):
@@ -33,12 +39,12 @@ def get_pixel_clusters(binary_image):
             previous = p
             clusters[current_cluster] = []
         if abs(p[0] - previous[0]) <= 1 or abs(p[1] - previous[1]) <= 1:
-            clusters[current_cluster].append(p[::-1])
+            clusters[current_cluster].append(p)
             previous = p
         else:
             previous = p
             current_cluster += 1
-            clusters[current_cluster] = [p[::-1]]
+            clusters[current_cluster] = [p]
     return clusters
 
 
@@ -82,6 +88,9 @@ def apply_backward_mapping(image, transformation):
 # The transparency parameter ranges from 0 to 1 and accepts float values.
 def draw_rectangle(image, center, transparency=0.4, colour=[0, 0, 255, 255], pan=[10, 10]):
     image_clone = copy.deepcopy(image)
+    # cv2.rectangle requires the coordinates in (x, y) terms and not in terms of the indices
+    # of the np.matrix of the image.
+    center = _make_coordinate(center)
     coordinate_1 = (center[0] - pan[0], center[1] - pan[1])
     coordinate_2 = (center[0] + pan[0], center[1] + pan[1])
     cv2.rectangle(image_clone, coordinate_1, coordinate_2, colour, thickness=-1)
@@ -131,7 +140,7 @@ if __name__ == "__main__":
         overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
 
     cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_4.png"), overlaid_image)
-    cv2.imshow("Image", overlaid_image)
+    cv2.imshow("Image", transformed_image)
 
     while(1):
      key = cv2.waitKey(0)
