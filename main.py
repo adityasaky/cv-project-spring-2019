@@ -50,14 +50,14 @@ if __name__ == "__main__":
     for _, cluster in list(pixel_clusters.items())[0:2]:
         cluster_centers.append(np.add(cluster[0], cluster[len(cluster) - 1]) / 2)
 
-    xPan = 10
-    yPan = 10
+    x_pan = 10
+    y_pan = 10
 
     for pixel in cluster_centers:
         center_x = np.int(pixel[0])
         center_y = np.int(pixel[1])
-        for x in range(center_x - xPan, center_x + xPan + 1):
-            for y in range(center_y - yPan, center_y + yPan + 1):
+        for x in range(center_x - x_pan, center_x + x_pan + 1):
+            for y in range(center_y - y_pan, center_y + y_pan + 1):
                 resized_image[x, y] = [0, 0, 255]
 
     cv2.imshow("Image", resized_image)
