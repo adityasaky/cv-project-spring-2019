@@ -18,7 +18,8 @@ def generate_binary_image(image, threshold):
     image_clone[image_clone <= threshold] = 0
     return image_clone
 
-def pixel_clusters_from(binary_image):
+
+def get_pixel_clusters(binary_image):
     previous = None
     clusters = {}
     current_cluster = 0
@@ -27,12 +28,12 @@ def pixel_clusters_from(binary_image):
             previous = p
             clusters[current_cluster] = []
         if abs(p[0] - previous[0]) <= 1 or abs(p[1] - previous[1]) <= 1:
-            clusters[current_cluster].append(p)
+            clusters[current_cluster].append(p[::-1])
             previous = p
         else:
             previous = p
             current_cluster += 1
-            clusters[current_cluster] = [p]
+            clusters[current_cluster] = [p[::-1]]
     return clusters
 
 
@@ -68,8 +69,8 @@ def apply_backward_mapping(image, transformation):
 
 def draw_rectangle(image, center, transparency=0.4, colour=np.array([0, 0, 255, 255]), pan=[10, 10]):
     image_clone = copy.deepcopy(image)
-    coordinate_1 = (center[1] - pan[0], center[0] - pan[1])
-    coordinate_2 = (center[1] + pan[0], center[0] + pan[1])
+    coordinate_1 = (center[0] - pan[0], center[1] - pan[1])
+    coordinate_2 = (center[0] + pan[0], center[1] + pan[1])
     cv2.rectangle(image_clone, coordinate_1, coordinate_2, colour, thickness=-1)
     cv2.addWeighted(image_clone, transparency, image, 1 - transparency, 0, image_clone)
     return image_clone
@@ -77,20 +78,11 @@ def draw_rectangle(image, center, transparency=0.4, colour=np.array([0, 0, 255, 
 
 def map_eyes(binary_image, original_image):
     original_image = copy.deepcopy(original_image)
-    pixel_clusters = pixel_clusters_from(binary_image)
+    pixel_clusters = get_pixel_clusters(binary_image)
     cluster_centers = []
     for _, cluster in list(pixel_clusters.items())[0:2]:
         cluster_centers.append(np.add(cluster[0], cluster[len(cluster) - 1]) / 2)
 
-    # x_pan = 20
-    # y_pan = 20
-
-    # for pixel in cluster_centers:
-    #     center_x = np.int(pixel[1])
-    #     center_y = np.int(pixel[0])
-    #     for x in range(center_x - x_pan, center_x + x_pan + 1):
-    #         for y in range(center_y - y_pan, center_y + y_pan + 1):
-    #             original_image[x, y] = [0, 0, 255, 0]
     return cluster_centers
 
 
@@ -106,6 +98,7 @@ if __name__ == "__main__":
     eyes = map_eyes(binary_image, resized_image)
 
     transformed_image = copy.deepcopy(resized_image)
+    overlaid_image = copy.deepcopy(resized_image)
 
     for eye in eyes:
         box_size = 10
@@ -121,10 +114,10 @@ if __name__ == "__main__":
         transformation = generate_transformation(2, 0, -tx, 0, 2, -ty)
 
         transformed_image[min_x:max_x, min_y:max_y] = apply_backward_mapping(eye_region, transformation)
-        overlaid_image = draw_rectangle(transformed_image, [np.int(eye[0]), np.int(eye[1])])
+        overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
 
     cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_4.png"), overlaid_image)
-    cv2.imshow("Image", transformed_image)
+    cv2.imshow("Image", overlaid_image)
 
     while(1):
      key = cv2.waitKey(0)
