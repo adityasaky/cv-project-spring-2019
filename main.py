@@ -85,7 +85,7 @@ if __name__ == "__main__":
     transformed_image = copy.deepcopy(resized_image)
 
     for eye in eyes:
-        box_size = 10
+        box_size = 15
         min_x = np.int(eye[0]) - box_size
         min_y = np.int(eye[1]) - box_size
         max_x = np.int(eye[0]) + box_size
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         ts = 3
         tx = ts * (max_x - min_x) / 4
         ty = ts * (max_y - min_y) / 4
-        transformation = generate_transformation(2, 0, -tx, 0, 2, -ty)
+        transformation = generate_transformation(ts, 0, -tx, 0, ts, -ty)
 
         transformed_image[min_x:max_x, min_y:max_y] = apply_backward_mapping(eye_region, transformation)
 
