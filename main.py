@@ -37,16 +37,10 @@ def pixel_clusters_from(binary_image):
             clusters[current_cluster] = [p]
     return clusters
 
-if __name__ == "__main__":
-    image = cv2.imread(os.path.join(DATA_FOLDER, "image_4.jpeg"))
-
-    resized_image = resize_image(image)
-    greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
-    binary_image = generate_binary_image(greyscale_image, 40)
-
+def map_eyes(binary_image, original_image):
+    original_image = copy.deepcopy(original_image)
     pixel_clusters = pixel_clusters_from(binary_image)
     cluster_centers = []
-
     for _, cluster in list(pixel_clusters.items())[0:2]:
         cluster_centers.append(np.add(cluster[0], cluster[len(cluster) - 1]) / 2)
 
@@ -58,9 +52,20 @@ if __name__ == "__main__":
         center_y = np.int(pixel[1])
         for x in range(center_x - xPan, center_x + xPan + 1):
             for y in range(center_y - yPan, center_y + yPan + 1):
-                resized_image[x, y] = [0, 0, 255]
+                original_image[x, y] = [0, 0, 255]
+    return original_image
 
-    cv2.imshow("Image", resized_image)
+if __name__ == "__main__":
+    image = cv2.imread(os.path.join(DATA_FOLDER, "image_4.jpeg"))
+
+    resized_image = resize_image(image)
+    greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
+    binary_image = generate_binary_image(greyscale_image, 40)
+
+    red_eyed_image = map_eyes(binary_image, resized_image)
+
+    cv2.imshow("Image", red_eyed_image)
+
     while(1):
      key = cv2.waitKey(0)
      if key == ord('q'):
