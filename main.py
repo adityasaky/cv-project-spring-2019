@@ -81,7 +81,7 @@ def map_eyes(binary_image, original_image):
     pixel_clusters = get_pixel_clusters(binary_image)
     cluster_centers = []
     for _, cluster in list(pixel_clusters.items())[0:2]:
-        cluster_centers.append((np.add(cluster[0], cluster[len(cluster) - 1]) / 2)[::-1])
+        cluster_centers.append(np.add(cluster[0], cluster[len(cluster) - 1]) / 2)
 
     return cluster_centers
 
