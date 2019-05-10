@@ -6,12 +6,15 @@ import os
 DATA_FOLDER = "data"
 OUTPUT_FOLDER = "output"
 
+# resize_image scales a passed image such that it has width 400px,
+# while maintaining aspect ratio.
 def resize_image(image, width=400):
     original_height, original_width, _ = image.shape
     height = int((original_height * 1.0 / original_width) * width)
     return cv2.resize(image, (width, height))
 
 
+# generate_binary_image thresholds a passed image at a specified value.
 def generate_binary_image(image, threshold):
     image_clone = copy.deepcopy(image)
     image_clone[image_clone > threshold] = 255
@@ -19,6 +22,8 @@ def generate_binary_image(image, threshold):
     return image_clone
 
 
+# get_pixel_clusters gets the clusters of pixels in order of occurrence
+# top to bottom, and returns a dictionary indexed by the instance of occurrence.
 def get_pixel_clusters(binary_image):
     previous = None
     clusters = {}
@@ -37,18 +42,24 @@ def get_pixel_clusters(binary_image):
     return clusters
 
 
+# make_transparent accepts an image and an alpha value, and adds an alpha
+# dimension corresponding to the transparency of the image.
 def make_transparent(image, alpha=255):
     b_channel, g_channel, r_channel = cv2.split(image)
     alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * alpha
     return cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
 
 
+# generate_transformation returns a 3x3 transformation matrix for passed affine
+# transformation values.
 def generate_transformation(a11, a12, a13, a21, a22, a23):
     return np.matrix([[a11, a12, a13],
                       [a21, a22, a23],
                       [0, 0, 1]])
 
 
+# apply_backward_mapping applies nearest neighbour interpolation to display an image
+# after transforming it.
 def apply_backward_mapping(image, transformation):
     transformation_inverse = np.linalg.pinv(transformation)
     target_nn = copy.deepcopy(image)
@@ -67,6 +78,8 @@ def apply_backward_mapping(image, transformation):
     return target_nn
 
 
+# draw_rectangle adds an optionally transparent rectangle centered at the specified coordinate.
+# The transparency parameter ranges from 0 to 1 and accepts float values.
 def draw_rectangle(image, center, transparency=0.4, colour=[0, 0, 255, 255], pan=[10, 10]):
     image_clone = copy.deepcopy(image)
     coordinate_1 = (center[0] - pan[0], center[1] - pan[1])
@@ -76,6 +89,7 @@ def draw_rectangle(image, center, transparency=0.4, colour=[0, 0, 255, 255], pan
     return image_clone
 
 
+# map_eyes identifies the centers of the eyes from clusters generated.
 def map_eyes(binary_image, original_image):
     original_image = copy.deepcopy(original_image)
     pixel_clusters = get_pixel_clusters(binary_image)
