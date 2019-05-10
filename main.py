@@ -67,7 +67,7 @@ def apply_backward_mapping(image, transformation):
     return target_nn
 
 
-def draw_rectangle(image, center, transparency=0.4, colour=np.array([0, 0, 255, 255]), pan=[10, 10]):
+def draw_rectangle(image, center, transparency=0.4, colour=[0, 0, 255, 255], pan=[10, 10]):
     image_clone = copy.deepcopy(image)
     coordinate_1 = (center[0] - pan[0], center[1] - pan[1])
     coordinate_2 = (center[0] + pan[0], center[1] + pan[1])
