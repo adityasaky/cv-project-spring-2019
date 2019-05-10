@@ -77,7 +77,7 @@ def apply_backward_mapping(image, transformation):
             x = np.int32(np.round(target_coordinates[0, 0]))
             y = np.int32(np.round(target_coordinates[1, 0]))
             if x < 0 or y < 0 or x >= image.shape[0] or y >= image.shape[1]:
-                target_nn[i, j] = np.array([0, 0, 0])
+                target_nn[i, j] = np.array([0, 0, 0, 0])
             else:
                 target_nn[i, j] = image[x, y]
 
