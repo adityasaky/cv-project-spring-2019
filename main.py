@@ -109,6 +109,9 @@ def map_eyes(binary_image, original_image):
     for _, cluster in list(pixel_clusters.items())[0:2]:
         cluster_centers.append(np.add(cluster[0], cluster[len(cluster) - 1]) / 2)
 
+    cluster_centers = sorted(cluster_centers, key=lambda i: i[1])
+    if np.linalg.norm(cluster_centers[0] - cluster_centers[1]) > 45:
+        cluster_centers.pop()
     return cluster_centers
 
 
@@ -116,7 +119,7 @@ if __name__ == "__main__":
     if OUTPUT_FOLDER not in os.listdir('.'):
         os.mkdir(OUTPUT_FOLDER)
 
-    image = cv2.imread(os.path.join(DATA_FOLDER, "image_4.jpeg"))
+    image = cv2.imread(os.path.join(DATA_FOLDER, "image_1.jpeg"))
 
     resized_image = make_transparent(resize_image(image))
     greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
