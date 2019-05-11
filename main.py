@@ -145,12 +145,13 @@ if __name__ == "__main__":
         transformed_image[min_x:max_x, min_y:max_y] = apply_backward_mapping(eye_region, transformation)
         overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
 
-    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_4.png"), overlaid_image)
+    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), overlaid_image)
     cv2.imshow("Image", transformed_image)
     cv2.waitKey()
 
-    eye_width = np.linalg.norm(eyes[0] - eyes[1])
+    eye_width = np.linalg.norm(eyes[0] - eyes[1]) if len(eyes) == 2 else 100
     eye_width = eye_width if eye_width > 40 else 100
+
     clipart1 = cv2.imread(os.path.join(DATA_FOLDER, "clipart1.png"), cv2.IMREAD_UNCHANGED)
     clipart1 = resize_image(clipart1, np.int(eye_width*1.5))
 
