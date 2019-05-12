@@ -104,6 +104,17 @@ def draw_rectangle(image, center, transparency=0.4, colour=[0, 0, 255, 255], pan
     return image_clone
 
 
+def get_all_video_frames(file_name):
+    file_path = os.path.join(DATA_FOLDER, file_name)
+    video = cv2.VideoCapture(file_path)
+    all_frames = []
+    while video.isOpened():
+        frame_check, frame = video.read()
+        if frame_check:
+            all_frames.append(make_transparent(resize_image(frame)))
+    return all_frames
+
+
 # map_eyes identifies the centers of the eyes from clusters generated.
 def map_eyes(binary_image, original_image):
     original_image = copy.deepcopy(original_image)
@@ -193,3 +204,8 @@ if __name__ == "__main__":
 
 
     cv2.imwrite(os.path.join(OUTPUT_FOLDER, "cliparted_image_temp1.png"), transformed_image)
+
+    all_frames = get_all_video_frames("video_1.mov")
+    for frame in all_frames:
+        cv2.imshow("Frame", frame)
+        cv2.waitKey(0)
