@@ -5,6 +5,7 @@ import os
 from landmarking import solve_landmarks
 
 DATA_FOLDER = "data"
+CLIPART_FOLDER = "data/clipart"
 OUTPUT_FOLDER = "output"
 
 # _make_coordinate is a helper function that allows us to sanely
@@ -133,7 +134,7 @@ def map_eyes(binary_image, original_image):
     return cluster_centers
 
 
-def clipart_on_eyes(image, eyes, clipart):
+def clipart_on_eyes(image, eyes, clipart, meta = (0,0)):
     eye_width = np.linalg.norm(eyes[0] - eyes[1]) if len(eyes) == 2 else 100
     eye_width = eye_width if eye_width > 40 else 100
 
@@ -148,7 +149,7 @@ def clipart_on_eyes(image, eyes, clipart):
     # clipart1 = apply_backward_mapping(clipart1, clipart_transformation)
 
     min_y, min_x = np.subtract(eyes[0], (clipart1.shape[0] / 2, clipart1.shape[1] / 6))
-    min_x, min_y = np.int(min_x), np.int(min_y)
+    min_x, min_y = np.int(min_x + meta[0]), np.int(min_y + meta[1])
 
     # max_x, max_y = np.add((min_x, min_y), (clipart1.shape[0], clipart1.shape[1]))
     # max_x, max_y = np.int(max_x), np.int(max_y)
@@ -171,7 +172,7 @@ if __name__ == "__main__":
 
     image = cv2.imread(os.path.join(DATA_FOLDER, "image_4.jpeg"))
 
-    resized_image = make_transparent(resize_image(image))
+    resized_image = resize_image(image)
     greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
     binary_image = generate_binary_image(greyscale_image, 45)
     eyes = map_eyes(binary_image, resized_image)
@@ -196,10 +197,17 @@ if __name__ == "__main__":
         overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
 
     cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), overlaid_image)
-    cv2.imshow("Image", transformed_image)
-    cv2.waitKey()
+    # cv2.imshow("Image", transformed_image)
+    # cv2.waitKey()
 
-    clipart = cv2.imread(os.path.join(DATA_FOLDER, "clipart1.png"), cv2.IMREAD_UNCHANGED)
+    clipart_name = "hat"
+    clipart = cv2.imread(os.path.join(CLIPART_FOLDER, clipart_name + ".png"), cv2.IMREAD_UNCHANGED)
+    meta_reader = open(os.path.join(CLIPART_FOLDER, clipart_name + ".meta"), "r")
+    if meta_reader:
+        clipart_meta = (int(meta_reader.readline()), int(meta_reader.readline()))
+    else:
+        clipart_meta = (0,0)
+    meta_reader.close()
 
     file_path = os.path.join(DATA_FOLDER, "video_1_compressed.mov")
     video_reader = cv2.VideoCapture(file_path)
@@ -207,24 +215,19 @@ if __name__ == "__main__":
     video_size = (int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH)),
             int(video_reader.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
-    codec = cv2.VideoWriter_fourcc(*'MJPG')
+    codec = cv2.VideoWriter_fourcc(*'jpeg')
     video_writer = cv2.VideoWriter(os.path.join(OUTPUT_FOLDER, "outpy.mov"), codec, 16, video_size)
 
     all_frames = []
     while video_reader.isOpened():
         frame_check, frame = video_reader.read()
         if frame_check:
-            # alpha_frame = make_transparent(frame)
             greyscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             binary_frame = generate_binary_image(greyscale_frame, 40)
 
             eyes = map_eyes(binary_frame, frame)
-            # cv2.imshow("Frame", binary_frame)
-            # cv2.waitKey(0)
-            processed_frame = clipart_on_eyes(frame, eyes, clipart)
+            processed_frame = clipart_on_eyes(frame, eyes, clipart, clipart_meta)
             video_writer.write(processed_frame)
-            # cv2.imshow("Frame", processed_frame)
-            # cv2.waitKey(0)
         else:
             break
 
