@@ -73,7 +73,7 @@ def generate_transformation(a11, a12, a13, a21, a22, a23):
 # apply_backward_mapping applies nearest neighbour interpolation to display an image
 # after transforming it.
 def apply_backward_mapping(image, transformation):
-    transformation_inverse = np.linalg.pinv(transformation)
+    transformation_inverse = np.linalg.inv(transformation)
     target_nn = copy.deepcopy(image)
 
     for i in range(image.shape[0]):
@@ -88,6 +88,30 @@ def apply_backward_mapping(image, transformation):
                 target_nn[i, j] = image[x, y]
 
     return target_nn
+
+
+# probably use instead of apply_backward_mapping, delete old function
+def apply_backward_mapping_eye(image, transformation, output_image):
+    transformation_inverse = np.linalg.inv(transformation)
+    for j in range(output_image.shape[0]):  # y value
+        for i in range(output_image.shape[1]):  # x value
+            target_coordinates = np.matmul(transformation_inverse, np.array([i, j, 1]).astype(float))
+            (original_x, original_y, _) = image.shape
+            (transformed_x, transformed_y, _) = output_image.shape
+            tx = int((transformed_x - original_x))/2
+            ty = int((transformed_y - original_y))/2
+            x = int(np.round(target_coordinates[0, 0]) + tx)
+            y = int(np.round(target_coordinates[0, 1]) + ty)
+            is_out_range = x < np.floor(tx) or y < np.floor(ty) or x >= image.shape[1] + tx or y >= image.shape[0] + ty
+            if not is_out_range:
+                # if source pixel is black, apply transform
+                test = 0
+                for k in range(3):  # each b, g, r intensity
+                    if image[int(y - ty), int(x - tx)][k] > 90:
+                        test += 1
+                if test == 0:
+                    output_image[j, i] = image[int(y - ty), int(x - tx)]
+    return output_image
 
 
 # draw_rectangle adds an optionally transparent rectangle centered at the specified coordinate.
@@ -118,19 +142,26 @@ def get_all_video_frames(file_name):
     return all_frames
 
 
-# map_eyes identifies the centers of the eyes from clusters generated.
-def map_eyes(binary_image, original_image):
-    original_image = copy.deepcopy(original_image)
+# map_eyes identifies the cluster min/max coordinates of the eyes from clusters generated.
+def map_eyes(binary_image):
     pixel_clusters = get_pixel_clusters(binary_image)
-    cluster_centers = []
-    for _, cluster in list(pixel_clusters.items())[0:2]:
-        cluster_centers.append(np.add(cluster[0], cluster[len(cluster) - 1]) / 2)
+    print(pixel_clusters)
+    cluster_dimensions = []  # 2 DEFAULT FOR NOW?
 
-    cluster_centers = sorted(cluster_centers, key=lambda i: i[1])
-    if np.linalg.norm(cluster_centers[0] - cluster_centers[1]) > 45:
-        cluster_centers.pop()
+    # MODIFY TO ONLY TAKE ONE EYE IF NEEDED? (current modification: eye distance at 45 pixels apart)
+    for cluster in list(pixel_clusters.values())[0:2]:
+        cluster = np.asarray(cluster)
+        min_xy = np.min(cluster, axis=0)
+        max_xy = np.max(cluster, axis=0)
+        cluster_dimensions.append([min_xy[0], max_xy[0], min_xy[1], max_xy[1]]) # y-coord, x-coord
+    # sort by lowest y value min, to get topmost clusters
+    cluster_dimensions = sorted(cluster_dimensions, key=lambda i: i[0])
 
-    return cluster_centers
+    # if np.linalg.norm(cluster_centers[0][1][1] - cluster_centers[1][1][1]) > 45:
+    #     cluster_centers.pop()
+
+    print(cluster_dimensions)
+    return cluster_dimensions
 
 
 def clipart_on_eyes(image, eyes, clipart):
@@ -174,26 +205,52 @@ if __name__ == "__main__":
     resized_image = make_transparent(resize_image(image))
     greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
     binary_image = generate_binary_image(greyscale_image, 45)
-    eyes = map_eyes(binary_image, resized_image)
+    eye_dimensions = map_eyes(binary_image)
 
     transformed_image = copy.deepcopy(resized_image)
     overlaid_image = copy.deepcopy(resized_image)
 
-    for eye in eyes:
-        box_size = 10
-        min_x = np.int(eye[0]) - box_size
-        min_y = np.int(eye[1]) - box_size
-        max_x = np.int(eye[0]) + box_size
-        max_y = np.int(eye[1]) + box_size
+    ts = 2
 
-        eye_region = transformed_image[min_x:max_x, min_y:max_y]
-        ts = 3
-        tx = ts * (max_x - min_x) / 4
-        ty = ts * (max_y - min_y) / 4
-        transformation = generate_transformation(ts, 0, -tx, 0, ts, -ty)
+    for i in range(len(eye_dimensions)):
 
-        transformed_image[min_x:max_x, min_y:max_y] = apply_backward_mapping(eye_region, transformation)
-        overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
+        # if box size is small, manually make it a little larger
+        if eye_dimensions[i][1] - eye_dimensions[i][0] < 2 or eye_dimensions[i][3] - eye_dimensions[i][2] < 2:
+            eye_dimensions[i][0] -= 1
+            eye_dimensions[i][1] += 1
+            eye_dimensions[i][2] -= 1
+            eye_dimensions[i][3] += 1
+
+        # get centers of both cropped source and transformed images (will be the same)
+        center_y = int((eye_dimensions[i][0] + eye_dimensions[i][1]) / 2)
+        center_x = int((eye_dimensions[i][2] + eye_dimensions[i][2]) / 2)
+
+        # calculate range of scaled transformed image; why does it look better with + 1?
+        # (ts = 3 and no +1 looks messed up)
+        range_y = ts * (int(eye_dimensions[i][1]) - int(eye_dimensions[i][0]) + 1)
+        range_x = ts * (int(eye_dimensions[i][3]) - int(eye_dimensions[i][2]) + 1)
+
+        # calculate min/max coordinate values of transformed image
+        min_y = center_y - np.int(range_y/2)
+        max_y = center_y + np.int(range_y/2)
+        min_x = center_x - np.int(range_x/2)
+        max_x = center_x + np.int(range_x/2)
+
+        # get source and transformed images (pre-transform)
+        eye_region = transformed_image[eye_dimensions[i][0]:eye_dimensions[i][1] + 1,
+                     eye_dimensions[i][2]:int(eye_dimensions[i][3]) + 1]
+        output_image = transformed_image[min_y:max_y + 1, min_x:max_x + 1]
+
+        # no translation - that is applied through indices later
+        # consider how translation up and left would not work when going forward
+        transformation = generate_transformation(ts, 0, 0, 0, ts, 0)
+
+        # transformed_image[min_y:max_y, min_x:max_x] = \
+        #     apply_backward_mapping_eye(eye_region, eye_dimensions[i][0] - min_y, eye_dimensions[i][2] - min_x,
+        #                                transformation, output_image)
+        transformed_image[min_y:max_y + 1, min_x:max_x + 1] = \
+            apply_backward_mapping_eye(eye_region, transformation, output_image)
+        #overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
 
     cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), overlaid_image)
     cv2.imshow("Image", transformed_image)
