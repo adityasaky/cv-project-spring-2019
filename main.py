@@ -105,14 +105,10 @@ def get_all_video_frames(file_name):
     file_path = os.path.join(DATA_FOLDER, file_name)
     video = cv2.VideoCapture(file_path)
     all_frames = []
-    # import pdb; pdb.set_trace()
-    i = 1
     while video.isOpened():
         frame_check, frame = video.read()
-        print(i)
         if frame_check:
             all_frames.append(make_transparent(resize_image(frame)))
-        i += 1
     return all_frames
 
 
@@ -160,41 +156,41 @@ if __name__ == "__main__":
         transformed_image[min_x:max_x, min_y:max_y] = apply_backward_mapping(eye_region, transformation)
         overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
 
-    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_4.png"), overlaid_image)
-    # cv2.imshow("Image", transformed_image)
-    # cv2.waitKey()
+    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), overlaid_image)
+    cv2.imshow("Image", transformed_image)
+    cv2.waitKey()
 
-    # eye_width = np.linalg.norm(eyes[0] - eyes[1])
-    # eye_width = eye_width if eye_width > 40 else 100
-    # clipart1 = cv2.imread(os.path.join(DATA_FOLDER, "clipart1.png"), cv2.IMREAD_UNCHANGED)
-    # clipart1 = resize_image(clipart1, np.int(eye_width*1.5))
+    eye_width = np.linalg.norm(eyes[0] - eyes[1]) if len(eyes) == 2 else 100
+    eye_width = eye_width if eye_width > 40 else 100
 
-    # clipart_eyemark_y = clipart1.shape[0] / 2
-    # clipart_eyemark_x = [np.int(clipart1.shape[1] * 0.25), np.int(clipart1.shape[0] * 0.75)]
+    clipart1 = cv2.imread(os.path.join(DATA_FOLDER, "clipart1.png"), cv2.IMREAD_UNCHANGED)
+    clipart1 = resize_image(clipart1, np.int(eye_width*1.5))
 
-    # # clipart_landmarks = [(clipart_eyemark_y, clipart_eyemark_x[0]), (clipart_eyemark_y, (clipart_eyemark_x[0] + clipart_eyemark_x[1])/2), (clipart_eyemark_y, clipart_eyemark_x[1])]
-    # # target_landmarks = [eyes[0], np.add(eyes[0], eyes[1])/2, eyes[1]]
-    # # clipart_transformation = solve_landmarks(clipart_landmarks, target_landmarks)
-    # # clipart1 = apply_backward_mapping(clipart1, clipart_transformation)
+    clipart_eyemark_y = clipart1.shape[0] / 2
+    clipart_eyemark_x = [np.int(clipart1.shape[1] * 0.25), np.int(clipart1.shape[0] * 0.75)]
 
-    # min_y, min_x = np.subtract(eyes[1], (clipart1.shape[0] / 2, clipart1.shape[1] / 6))
-    # min_x, min_y = np.int(min_x), np.int(min_y)
+    # clipart_landmarks = [(clipart_eyemark_y, clipart_eyemark_x[0]), (clipart_eyemark_y, (clipart_eyemark_x[0] + clipart_eyemark_x[1])/2), (clipart_eyemark_y, clipart_eyemark_x[1])]
+    # target_landmarks = [eyes[0], np.add(eyes[0], eyes[1])/2, eyes[1]]
+    # clipart_transformation = solve_landmarks(clipart_landmarks, target_landmarks)
+    # clipart1 = apply_backward_mapping(clipart1, clipart_transformation)
 
-    # # max_x, max_y = np.add((min_x, min_y), (clipart1.shape[0], clipart1.shape[1]))
-    # # max_x, max_y = np.int(max_x), np.int(max_y)
+    min_y, min_x = np.subtract(eyes[1], (clipart1.shape[0] / 2, clipart1.shape[1] / 6))
+    min_x, min_y = np.int(min_x), np.int(min_y)
 
-    # # transformed_image[min_x:max_x, min_y:max_y] = clipart1
-    # for x in range(0, clipart1.shape[1]):
-    #     for y in range(0, clipart1.shape[0]):
-    #         # transformed_image[min_y + y, min_x + x] = [0,0,255,1]
-    #         if clipart1[y,x][3] > 100:
-    #             transformed_image[min_y + y, min_x + x] = clipart1[y, x]
+    # max_x, max_y = np.add((min_x, min_y), (clipart1.shape[0], clipart1.shape[1]))
+    # max_x, max_y = np.int(max_x), np.int(max_y)
+
+    # transformed_image[min_x:max_x, min_y:max_y] = clipart1
+    for x in range(0, clipart1.shape[1]):
+        for y in range(0, clipart1.shape[0]):
+            # transformed_image[min_y + y, min_x + x] = [0,0,255,1]
+            if clipart1[y,x][3] > 100:
+                transformed_image[min_y + y, min_x + x] = clipart1[y, x]
 
 
-    # cv2.imwrite(os.path.join(OUTPUT_FOLDER, "cliparted_image_temp1.png"), transformed_image)
-    
+    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "cliparted_image_temp1.png"), transformed_image)
+
     all_frames = get_all_video_frames("video_1.mov")
-    import pdb; pdb.set_trace()
     for frame in all_frames:
         cv2.imshow("Frame", frame)
         cv2.waitKey(0)
