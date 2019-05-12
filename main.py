@@ -29,21 +29,24 @@ def generate_binary_image(image, threshold):
     return image_clone
 
 
+def in_cluster_neighbor(pixel, cluster):
+    for member in cluster[::-1]:
+        if abs(pixel[0] - member[0]) <= 1 and abs(pixel[1] - member[1]) <= 1:
+            return True
+    return False
+
 # get_pixel_clusters gets the clusters of pixels in order of occurrence
 # top to bottom, and returns a dictionary indexed by the instance of occurrence.
 def get_pixel_clusters(binary_image):
-    previous = None
     clusters = {}
     current_cluster = 0
     for p in np.argwhere(binary_image == 0):
-        if previous is None:
-            previous = p
-            clusters[current_cluster] = []
-        if abs(p[0] - previous[0]) <= 1 or abs(p[1] - previous[1]) <= 1:
+        if current_cluster not in clusters:
+            clusters[current_cluster] = [p]
+            continue
+        if in_cluster_neighbor(p, clusters[current_cluster]):
             clusters[current_cluster].append(p)
-            previous = p
         else:
-            previous = p
             current_cluster += 1
             clusters[current_cluster] = [p]
     return clusters
@@ -112,6 +115,12 @@ def map_eyes(binary_image, original_image):
     cluster_centers = sorted(cluster_centers, key=lambda i: i[1])
     if np.linalg.norm(cluster_centers[0] - cluster_centers[1]) > 45:
         cluster_centers.pop()
+
+    cv2.imshow("Image", binary_image)
+    while 1:
+        key = cv2.waitKey()
+        if key == ord('q'):
+            break
     return cluster_centers
 
 
@@ -119,15 +128,21 @@ if __name__ == "__main__":
     if OUTPUT_FOLDER not in os.listdir('.'):
         os.mkdir(OUTPUT_FOLDER)
 
-    image = cv2.imread(os.path.join(DATA_FOLDER, "image_1.jpeg"))
+    image = cv2.imread(os.path.join(DATA_FOLDER, "image_4.jpeg"))
 
     resized_image = make_transparent(resize_image(image))
     greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
-    binary_image = generate_binary_image(greyscale_image, 40)
+    binary_image = generate_binary_image(greyscale_image, 45)
     eyes = map_eyes(binary_image, resized_image)
 
     transformed_image = copy.deepcopy(resized_image)
     overlaid_image = copy.deepcopy(resized_image)
+
+    cv2.imshow("Image", binary_image)
+    while 1:
+        key = cv2.waitKey()
+        if key == ord('q'):
+            break
 
     for eye in eyes:
         box_size = 10
