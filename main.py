@@ -15,7 +15,7 @@ def in_cluster_neighbor(pixel, cluster):
 
 # get_pixel_clusters gets the clusters of pixels in order of occurrence
 # top to bottom, and returns a dictionary indexed by the instance of occurrence.
-def get_pixel_clusters(binary_image):
+def get_pixel_clusters(binary_image, merge_clusters = False):
     clusters = {}
     current_cluster = 0
     for p in np.argwhere(binary_image == 0):
@@ -27,10 +27,33 @@ def get_pixel_clusters(binary_image):
         else:
             current_cluster += 1
             clusters[current_cluster] = [p]
+    if merge_clusters:
+        clusters = merge_connected_clusters(clusters)
     return clusters
 
+def merge_connected_clusters(clusters):
+    current = 0
+    while current < len(clusters):
+        previous = None if current == 0 else current - 1
+        next = None if current == (len(clusters) - 1) else current + 1
+        if previous is not None:
+            for pixel in clusters[current]:
+                if in_cluster_neighbor(pixel, clusters[previous]):
+                    clusters[previous].extend(clusters[current])
+                    clusters.pop(current)
+                    clusters = serialize_clusters(clusters)
+                    current = -1
+                    break
+        current += 1
+    return clusters
 
-
+def serialize_clusters(clusters):
+    index = 0
+    result = {}
+    for cluster in clusters:
+        result[index] = clusters[cluster]
+        index += 1
+    return result
 
 # generate_transformation returns a 3x3 transformation matrix for passed affine
 # transformation values.
@@ -216,7 +239,10 @@ if __name__ == "__main__":
     video_writer = cv2.VideoWriter(os.path.join(OUTPUT_FOLDER, "outpy.mov"), codec, 16, video_size)
 
     all_frames = []
+    index = -1
     while video_reader.isOpened():
+        index += 1
+        print("processing frame: ", index)
         frame_check, frame = video_reader.read()
         if frame_check:
             greyscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
