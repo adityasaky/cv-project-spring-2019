@@ -34,16 +34,20 @@ def get_pixel_clusters(binary_image, merge_clusters = False):
 def merge_connected_clusters(clusters):
     current = 0
     while current < len(clusters):
-        previous = None if current == 0 else current - 1
-        next = None if current == (len(clusters) - 1) else current + 1
-        if previous is not None:
+        comparison = current + 1
+        comparisonBreak = False
+        while not comparisonBreak:
+            if comparison >= len(clusters):
+                break
             for pixel in clusters[current]:
-                if in_cluster_neighbor(pixel, clusters[previous]):
-                    clusters[previous].extend(clusters[current])
+                if in_cluster_neighbor(pixel, clusters[comparison]):
+                    clusters[comparison].extend(clusters[current])
                     clusters.pop(current)
                     clusters = serialize_clusters(clusters)
                     current = -1
+                    comparisonBreak = True
                     break
+            comparison += 1
         current += 1
     return clusters
 
@@ -106,7 +110,7 @@ def map_eyes(binary_image, original_image):
 
 
 def map_eyes_bounds(binary_image):
-    pixel_clusters = get_pixel_clusters(binary_image)
+    pixel_clusters = get_pixel_clusters(binary_image, True)
     print(pixel_clusters)
     cluster_dimensions = []  # 2 DEFAULT FOR NOW?
 
@@ -164,7 +168,7 @@ if __name__ == "__main__":
     if OUTPUT_FOLDER not in os.listdir('.'):
         os.mkdir(OUTPUT_FOLDER)
 
-    image = cv2.imread(os.path.join(DATA_FOLDER, "image_4.jpeg"))
+    image = cv2.imread(os.path.join(DATA_FOLDER, "test_clusters.jpg"))
 
     resized_image = resize_image(image)
     greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
