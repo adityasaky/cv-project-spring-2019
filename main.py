@@ -75,9 +75,10 @@ def map_eyes(binary_image, original_image):
         cluster_centers.append(np.add(cluster[0], cluster[len(cluster) - 1]) / 2)
 
     cluster_centers_two = sorted(cluster_centers[:2], key=lambda i: i[1])
-    if abs(cluster_centers_two[0][0] - cluster_centers_two[1][0]) > 40:
+    if len(cluster_centers_two) < 2 or abs(cluster_centers_two[0][0] - cluster_centers_two[1][0]) > 40:
         cluster_centers_two = sorted(cluster_centers_two, key=lambda i: i[0])
-        cluster_centers_two.pop()
+        if len(cluster_centers_two) > 1:
+            cluster_centers_two.pop()
         cluster_center = cluster_centers_two[0]
         center_col = cluster_center[1]
         left_count = 0
@@ -110,7 +111,7 @@ def map_eyes(binary_image, original_image):
 
 
 def map_eyes_bounds(binary_image):
-    pixel_clusters = get_pixel_clusters(binary_image, True)
+    pixel_clusters = get_pixel_clusters(binary_image, False)
     print(pixel_clusters)
     cluster_dimensions = []  # 2 DEFAULT FOR NOW?
 
@@ -233,14 +234,14 @@ if __name__ == "__main__":
         clipart_meta = (0,0)
     meta_reader.close()
 
-    file_path = os.path.join(DATA_FOLDER, "video_1_compressed.mov")
+    file_path = os.path.join(DATA_FOLDER, "video_2_compressed.mov")
     video_reader = cv2.VideoCapture(file_path)
 
     video_size = (int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH)),
             int(video_reader.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
     codec = cv2.VideoWriter_fourcc(*'jpeg')
-    video_writer = cv2.VideoWriter(os.path.join(OUTPUT_FOLDER, "outpy.mov"), codec, 16, video_size)
+    video_writer = cv2.VideoWriter(os.path.join(OUTPUT_FOLDER, "outpy2.mov"), codec, 16, video_size)
 
     all_frames = []
     index = -1
