@@ -232,7 +232,7 @@ def clipart_on_eyes(image, eyes, clipart, position=None, meta = (0,0)):
     for x in range(0, clipart1.shape[1]):
         for y in range(0, clipart1.shape[0]):
             # transformed_image[min_y + y, min_x + x] = [0,0,255,1]
-            if clipart1[y,x][3] > 100 and (min_y + y) < image.shape[0] and (min_x + x) < image.shape[1]:
+            if clipart1[y,x][3] > 100 and 0 <= (min_y + y) < image.shape[0] and 0 <= (min_x + x) < image.shape[1]:
                 image[min_y + y, min_x + x] = clipart1[y, x][0:3]
 
     # cv2.imwrite(os.path.join(OUTPUT_FOLDER, "cliparted_image_temp1.png"), transformed_image)
