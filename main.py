@@ -201,8 +201,6 @@ if __name__ == "__main__":
             apply_backward_mapping_eye(eye_region, transformation, output_image)
 
     cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), transformed_image)
-    cv2.imshow("Image", transformed_image)
-    cv2.waitKey()
 
     clipart_name = "hat"
     clipart = cv2.imread(os.path.join(CLIPART_FOLDER, clipart_name + ".png"), cv2.IMREAD_UNCHANGED)
