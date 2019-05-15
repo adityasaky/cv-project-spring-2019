@@ -1,6 +1,7 @@
 import numpy as np
 import copy
 import cv2
+from constants import DATA_FOLDER, CLIPART_FOLDER, OUTPUT_FOLDER
 
 
 # resize_image scales a passed image such that it has width 400px,
@@ -67,7 +68,6 @@ def apply_backward_mapping_eye(image, transformation, output_image):
                 is_very_grey = (np.prod(weighted_rgb_values > 0.28) * np.prod(weighted_rgb_values < 0.40))
                 # all_pass_condition = (rgb_values <= 70)
                 if is_very_grey:
-                    print(output_image[int(j), int(i)])
                     output_image[int(j), int(i)] = rgb_values
 
     return output_image

@@ -26,4 +26,3 @@ def solve_landmarks(clicks_a, clicks_b):
                                 [a[3,0], a[4,0], a[5,0]],
                                 [0, 0, 1]]
         return transformation_matrix
-
