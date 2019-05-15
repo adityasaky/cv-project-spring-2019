@@ -107,7 +107,6 @@ def map_eyes(binary_image, original_image):
                     left_count += 1
         if left_count == right_count:
             if center_col <= original_image.shape[1] / 2:
-                # this is the right eye
                 return cluster_centers_two, 'right'
             else:
                 return cluster_centers_two, 'left'
@@ -120,9 +119,8 @@ def map_eyes(binary_image, original_image):
 
 def map_eyes_bounds(binary_image):
     pixel_clusters = get_pixel_clusters(binary_image, False)
-    cluster_dimensions = []  # 2 DEFAULT FOR NOW?
+    cluster_dimensions = []
 
-    # MODIFY TO ONLY TAKE ONE EYE IF NEEDED? (current modification: eye distance at 45 pixels apart)
     for cluster in list(pixel_clusters.values())[0:2]:
         cluster = np.asarray(cluster)
         min_xy = np.min(cluster, axis=0)
@@ -130,9 +128,6 @@ def map_eyes_bounds(binary_image):
         cluster_dimensions.append([min_xy[0], max_xy[0], min_xy[1], max_xy[1]]) # y-coord, x-coord
     # sort by lowest y value min, to get topmost clusters
     cluster_dimensions = sorted(cluster_dimensions, key=lambda i: i[0])
-
-    # if np.linalg.norm(cluster_centers[0][1][1] - cluster_centers[1][1][1]) > 45:
-    #     cluster_centers.pop()
 
     return cluster_dimensions
 
@@ -143,31 +138,18 @@ def clipart_on_eyes(image, eyes, clipart, position=None, meta = (0,0)):
 
     clipart1 = resize_image(copy.deepcopy(clipart), np.int(eye_width*1.5))
     image = copy.deepcopy(image)
-    # clipart_eyemark_y = clipart1.shape[0] / 2
-    # clipart_eyemark_x = [np.int(clipart1.shape[1] * 0.25), np.int(clipart1.shape[0] * 0.75)]
-
-    # clipart_landmarks = [(clipart_eyemark_y, clipart_eyemark_x[0]), (clipart_eyemark_y, (clipart_eyemark_x[0] + clipart_eyemark_x[1])/2), (clipart_eyemark_y, clipart_eyemark_x[1])]
-    # target_landmarks = [eyes[0], np.add(eyes[0], eyes[1])/2, eyes[1]]
-    # clipart_transformation = solve_landmarks(clipart_landmarks, target_landmarks)
-    # clipart1 = apply_backward_mapping(clipart1, clipart_transformation)
 
     min_y, min_x = np.subtract(eyes[0], (clipart1.shape[0] / 2, clipart1.shape[1] / 6))
     min_x, min_y = np.int(min_x + meta[0]), np.int(min_y + meta[1])
     if position == 'right':
         min_x -= 100
 
-    # max_x, max_y = np.add((min_x, min_y), (clipart1.shape[0], clipart1.shape[1]))
-    # max_x, max_y = np.int(max_x), np.int(max_y)
 
-    # transformed_image[min_x:max_x, min_y:max_y] = clipart1
     for x in range(0, clipart1.shape[1]):
         for y in range(0, clipart1.shape[0]):
-            # transformed_image[min_y + y, min_x + x] = [0,0,255,1]
             if clipart1[y,x][3] > 100 and 0 <= (min_y + y) < image.shape[0] and 0 <= (min_x + x) < image.shape[1]:
                 image[min_y + y, min_x + x] = clipart1[y, x][0:3]
 
-    # cv2.imwrite(os.path.join(OUTPUT_FOLDER, "cliparted_image_temp1.png"), transformed_image)
-    # print(eyes, (min_y, min_x), eye_width)
     return image
 
 
@@ -217,7 +199,6 @@ if __name__ == "__main__":
         transformation = generate_transformation(ts, 0, 0, 0, ts, 0)
         transformed_image[min_y:max_y + 1, min_x:max_x + 1] = \
             apply_backward_mapping_eye(eye_region, transformation, output_image)
-        #overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
 
     cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), transformed_image)
     cv2.imshow("Image", transformed_image)
@@ -239,7 +220,7 @@ if __name__ == "__main__":
             int(video_reader.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
     codec = cv2.VideoWriter_fourcc(*'jpeg')
-    video_writer = cv2.VideoWriter(os.path.join(OUTPUT_FOLDER, "outpy2.mov"), codec, 16, video_size)
+    video_writer = cv2.VideoWriter(os.path.join(OUTPUT_FOLDER, "clipart_overlay_{}.mov".format(clipart_name)), codec, 16, video_size)
 
     all_frames = []
     index = -1
@@ -251,8 +232,6 @@ if __name__ == "__main__":
             binary_frame = generate_binary_image(greyscale_frame, 40)
 
             eyes, position = map_eyes(binary_frame, frame)
-            # cv2.imshow("Frame", binary_frame)
-            # cv2.waitKey(0)
             processed_frame = clipart_on_eyes(frame, eyes, clipart, position, clipart_meta)
             video_writer.write(processed_frame)
         else:
