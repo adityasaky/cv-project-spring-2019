@@ -7,7 +7,8 @@ from media_functions import resize_image, generate_binary_image, make_transparen
 from constants import DATA_FOLDER, CLIPART_FOLDER, OUTPUT_FOLDER
 
 
-def in_cluster_neighbor(pixel, cluster):
+# _in_cluster_neighbor is a helper function to check if a pixel belongs to a particular cluster. 
+def _in_cluster_neighbor(pixel, cluster):
     for member in cluster[::-1]:
         if abs(pixel[0] - member[0]) <= 2 and abs(pixel[1] - member[1]) <= 2:
             return True
@@ -22,7 +23,7 @@ def get_pixel_clusters(binary_image, merge_clusters = False):
         if current_cluster not in clusters:
             clusters[current_cluster] = [p]
             continue
-        if in_cluster_neighbor(p, clusters[current_cluster]):
+        if _in_cluster_neighbor(p, clusters[current_cluster]):
             clusters[current_cluster].append(p)
         else:
             current_cluster += 1
@@ -31,6 +32,9 @@ def get_pixel_clusters(binary_image, merge_clusters = False):
         clusters = merge_connected_clusters(clusters)
     return clusters
 
+
+# merge_connected_clusters checks for 8-neighbour connectivity and merges pixels
+# together into a common cluster.
 def merge_connected_clusters(clusters):
     current = 0
     while current < len(clusters):
@@ -40,10 +44,10 @@ def merge_connected_clusters(clusters):
             if comparison >= len(clusters):
                 break
             for pixel in clusters[current]:
-                if in_cluster_neighbor(pixel, clusters[comparison]):
+                if _in_cluster_neighbor(pixel, clusters[comparison]):
                     clusters[comparison].extend(clusters[current])
                     clusters.pop(current)
-                    clusters = serialize_clusters(clusters)
+                    clusters = _serialize_clusters(clusters)
                     current = -1
                     comparisonBreak = True
                     break
@@ -51,13 +55,17 @@ def merge_connected_clusters(clusters):
         current += 1
     return clusters
 
-def serialize_clusters(clusters):
+
+# _serialize_clusters is a helper function to reorder detected clusters
+# and maintain continuity.
+def _serialize_clusters(clusters):
     index = 0
     result = {}
     for cluster in clusters:
         result[index] = clusters[cluster]
         index += 1
     return result
+
 
 # generate_transformation returns a 3x3 transformation matrix for passed affine
 # transformation values.
