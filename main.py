@@ -181,26 +181,26 @@ if __name__ == "__main__":
 
     resized_image = resize_image(image)
     greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
-    binary_image = generate_binary_image(greyscale_image, 45)
+    binary_image = generate_binary_image(greyscale_image, 50)
     eye_dimensions = map_eyes_bounds(binary_image)
 
     transformed_image = copy.deepcopy(resized_image)
     overlaid_image = copy.deepcopy(resized_image)
 
-    ts = 2
+    ts = 3
 
     for i in range(len(eye_dimensions)):
-
         # if box size is small, manually make it a little larger
-        if eye_dimensions[i][1] - eye_dimensions[i][0] < 2 or eye_dimensions[i][3] - eye_dimensions[i][2] < 2:
+        if eye_dimensions[i][1] - eye_dimensions[i][0] < 3 or eye_dimensions[i][3] - eye_dimensions[i][2] < 3:
             eye_dimensions[i][0] -= 1
             eye_dimensions[i][1] += 1
             eye_dimensions[i][2] -= 1
             eye_dimensions[i][3] += 1
 
+        print(eye_dimensions[i])
         # get centers of both cropped source and transformed images (will be the same)
         center_y = int((eye_dimensions[i][0] + eye_dimensions[i][1]) / 2)
-        center_x = int((eye_dimensions[i][2] + eye_dimensions[i][2]) / 2)
+        center_x = int((eye_dimensions[i][2] + eye_dimensions[i][3]) / 2)
 
         # calculate range of scaled transformed image; why does it look better with + 1?
         # (ts = 3 and no +1 looks messed up)
@@ -221,10 +221,6 @@ if __name__ == "__main__":
         # no translation - that is applied through indices later
         # consider how translation up and left would not work when going forward
         transformation = generate_transformation(ts, 0, 0, 0, ts, 0)
-
-        # transformed_image[min_y:max_y, min_x:max_x] = \
-        #     apply_backward_mapping_eye(eye_region, eye_dimensions[i][0] - min_y, eye_dimensions[i][2] - min_x,
-        #                                transformation, output_image)
         transformed_image[min_y:max_y + 1, min_x:max_x + 1] = \
             apply_backward_mapping_eye(eye_region, transformation, output_image)
         #overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])

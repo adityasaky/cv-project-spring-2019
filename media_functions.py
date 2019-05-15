@@ -48,30 +48,29 @@ def apply_backward_mapping(image, transformation):
 
     return target_nn
 
-
 # probably use instead of apply_backward_mapping, delete old function
 def apply_backward_mapping_eye(image, transformation, output_image):
     transformation_inverse = np.linalg.inv(transformation)
     for j in range(output_image.shape[0]):  # y value
         for i in range(output_image.shape[1]):  # x value
-            target_coordinates = np.matmul(transformation_inverse, np.array([i, j, 1]).astype(float))
             (original_x, original_y, _) = image.shape
             (transformed_x, transformed_y, _) = output_image.shape
-            tx = int((transformed_x - original_x))/2
-            ty = int((transformed_y - original_y))/2
-            x = int(np.round(target_coordinates[0, 0]) + tx)
-            y = int(np.round(target_coordinates[0, 1]) + ty)
-            is_out_range = x < np.floor(tx) or y < np.floor(ty) or x >= image.shape[1] + tx or y >= image.shape[0] + ty
-            if not is_out_range:
-                # if source pixel is black, apply transform
-                test = 0
-                for k in range(3):  # each b, g, r intensity
-                    if image[int(y - ty), int(x - tx)][k] > 90:
-                        test += 1
-                if test == 0:
-                    output_image[j, i] = image[int(y - ty), int(x - tx)]
-    return output_image
 
+            target_coordinates = np.matmul(transformation_inverse, np.array([i, j, 1]).astype(float))
+
+            x = int(np.round(target_coordinates[0, 0]))
+            y = int(np.round(target_coordinates[0, 1]))
+            is_out_range = x < 0 or y < 0 or x >= image.shape[1] or y >= image.shape[0]
+            if not is_out_range:
+                rgb_values = image[int(y), int(x)]
+                weighted_rgb_values = rgb_values / np.sum(rgb_values)
+                is_very_grey = (np.prod(weighted_rgb_values > 0.28) * np.prod(weighted_rgb_values < 0.40))
+                # all_pass_condition = (rgb_values <= 70)
+                if is_very_grey:
+                    print(output_image[int(j), int(i)])
+                    output_image[int(j), int(i)] = rgb_values
+
+    return output_image
 
 def get_all_video_frames(file_name):
     file_path = os.path.join(DATA_FOLDER, file_name)
