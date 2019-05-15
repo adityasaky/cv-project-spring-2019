@@ -130,8 +130,7 @@ def map_eyes_bounds(binary_image):
     print(cluster_dimensions)
     return cluster_dimensions
 
-
-def clipart_on_eyes(image, eyes, clipart, position=None, meta = (0,0)):
+def clipart_on_eyes(image, eyes, clipart, position=None, meta = (0,0), previous_anchor = None):
     eye_width = np.linalg.norm(eyes[0] - eyes[1]) if len(eyes) == 2 else 100
     eye_width = eye_width if eye_width > 40 else 100
 
@@ -150,6 +149,10 @@ def clipart_on_eyes(image, eyes, clipart, position=None, meta = (0,0)):
     if position == 'right':
         min_x -= 100
 
+    if previous_anchor is None or (abs(previous_anchor[0] - min_y) < 75 and abs(previous_anchor[1] - min_x) < 100):
+        previous_anchor = (min_y, min_x)
+    else:
+         (min_y, min_x) = previous_anchor
     # max_x, max_y = np.add((min_x, min_y), (clipart1.shape[0], clipart1.shape[1]))
     # max_x, max_y = np.int(max_x), np.int(max_y)
 
@@ -162,7 +165,7 @@ def clipart_on_eyes(image, eyes, clipart, position=None, meta = (0,0)):
 
     # cv2.imwrite(os.path.join(OUTPUT_FOLDER, "cliparted_image_temp1.png"), transformed_image)
     # print(eyes, (min_y, min_x), eye_width)
-    return image
+    return image, previous_anchor
 
 
 if __name__ == "__main__":
@@ -234,17 +237,18 @@ if __name__ == "__main__":
         clipart_meta = (0,0)
     meta_reader.close()
 
-    file_path = os.path.join(DATA_FOLDER, "video_2_compressed.mov")
+    file_path = os.path.join(DATA_FOLDER, "video_1_compressed.mov")
     video_reader = cv2.VideoCapture(file_path)
 
     video_size = (int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH)),
             int(video_reader.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
     codec = cv2.VideoWriter_fourcc(*'jpeg')
-    video_writer = cv2.VideoWriter(os.path.join(OUTPUT_FOLDER, "outpy2.mov"), codec, 16, video_size)
+    video_writer = cv2.VideoWriter(os.path.join(OUTPUT_FOLDER, "outpy1_flow.mov"), codec, 16, video_size)
 
     all_frames = []
     index = -1
+    previous_anchor = None
     while video_reader.isOpened():
         index += 1
         print("processing frame: ", index)
@@ -256,10 +260,9 @@ if __name__ == "__main__":
             eyes, position = map_eyes(binary_frame, frame)
             # cv2.imshow("Frame", binary_frame)
             # cv2.waitKey(0)
-            processed_frame = clipart_on_eyes(frame, eyes, clipart, position, clipart_meta)
+            processed_frame, previous_anchor = clipart_on_eyes(frame, eyes, clipart, position, clipart_meta, previous_anchor)
             video_writer.write(processed_frame)
         else:
             break
-
     video_reader.release()
     video_writer.release()
