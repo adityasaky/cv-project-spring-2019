@@ -202,16 +202,16 @@ if __name__ == "__main__":
 
     cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), transformed_image)
 
-    clipart_name = "hat"
+    clipart_name = "glasses"
     clipart = cv2.imread(os.path.join(CLIPART_FOLDER, clipart_name + ".png"), cv2.IMREAD_UNCHANGED)
-    meta_reader = open(os.path.join(CLIPART_FOLDER, clipart_name + ".meta"), "r")
-    if meta_reader:
+    if clipart_name + ".meta" in os.listdir(CLIPART_FOLDER):
+        meta_reader = open(os.path.join(CLIPART_FOLDER, clipart_name + ".meta"), "r")
         clipart_meta = (int(meta_reader.readline()), int(meta_reader.readline()))
+        meta_reader.close()
     else:
         clipart_meta = (0,0)
-    meta_reader.close()
 
-    file_path = os.path.join(DATA_FOLDER, "video_3_compressed.mov")
+    file_path = os.path.join(DATA_FOLDER, "video_1_compressed.mov")
     video_reader = cv2.VideoCapture(file_path)
 
     video_size = (int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH)),
