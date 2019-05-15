@@ -120,7 +120,6 @@ def map_eyes(binary_image, original_image):
 
 def map_eyes_bounds(binary_image):
     pixel_clusters = get_pixel_clusters(binary_image, False)
-    print(pixel_clusters)
     cluster_dimensions = []  # 2 DEFAULT FOR NOW?
 
     # MODIFY TO ONLY TAKE ONE EYE IF NEEDED? (current modification: eye distance at 45 pixels apart)
@@ -135,7 +134,6 @@ def map_eyes_bounds(binary_image):
     # if np.linalg.norm(cluster_centers[0][1][1] - cluster_centers[1][1][1]) > 45:
     #     cluster_centers.pop()
 
-    print(cluster_dimensions)
     return cluster_dimensions
 
 
@@ -177,7 +175,7 @@ if __name__ == "__main__":
     if OUTPUT_FOLDER not in os.listdir('.'):
         os.mkdir(OUTPUT_FOLDER)
 
-    image = cv2.imread(os.path.join(DATA_FOLDER, "test_clusters.jpg"))
+    image = cv2.imread(os.path.join(DATA_FOLDER, "image_4.jpeg"))
 
     resized_image = resize_image(image)
     greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
@@ -185,7 +183,6 @@ if __name__ == "__main__":
     eye_dimensions = map_eyes_bounds(binary_image)
 
     transformed_image = copy.deepcopy(resized_image)
-    overlaid_image = copy.deepcopy(resized_image)
 
     ts = 3
 
@@ -197,7 +194,6 @@ if __name__ == "__main__":
             eye_dimensions[i][2] -= 1
             eye_dimensions[i][3] += 1
 
-        print(eye_dimensions[i])
         # get centers of both cropped source and transformed images (will be the same)
         center_y = int((eye_dimensions[i][0] + eye_dimensions[i][1]) / 2)
         center_x = int((eye_dimensions[i][2] + eye_dimensions[i][3]) / 2)
@@ -218,16 +214,14 @@ if __name__ == "__main__":
                      eye_dimensions[i][2]:int(eye_dimensions[i][3]) + 1]
         output_image = transformed_image[min_y:max_y + 1, min_x:max_x + 1]
 
-        # no translation - that is applied through indices later
-        # consider how translation up and left would not work when going forward
         transformation = generate_transformation(ts, 0, 0, 0, ts, 0)
         transformed_image[min_y:max_y + 1, min_x:max_x + 1] = \
             apply_backward_mapping_eye(eye_region, transformation, output_image)
         #overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
 
-    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), overlaid_image)
-    # cv2.imshow("Image", transformed_image)
-    # cv2.waitKey()
+    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), transformed_image)
+    cv2.imshow("Image", transformed_image)
+    cv2.waitKey()
 
     clipart_name = "hat"
     clipart = cv2.imread(os.path.join(CLIPART_FOLDER, clipart_name + ".png"), cv2.IMREAD_UNCHANGED)
@@ -238,7 +232,7 @@ if __name__ == "__main__":
         clipart_meta = (0,0)
     meta_reader.close()
 
-    file_path = os.path.join(DATA_FOLDER, "video_2_compressed.mov")
+    file_path = os.path.join(DATA_FOLDER, "video_3_compressed.mov")
     video_reader = cv2.VideoCapture(file_path)
 
     video_size = (int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH)),
@@ -251,7 +245,6 @@ if __name__ == "__main__":
     index = -1
     while video_reader.isOpened():
         index += 1
-        print("processing frame: ", index)
         frame_check, frame = video_reader.read()
         if frame_check:
             greyscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
