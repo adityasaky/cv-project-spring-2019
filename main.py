@@ -166,6 +166,7 @@ def clipart_on_eyes(image, eyes, clipart, position=None, meta = (0,0, False), pr
 
 
 if __name__ == "__main__":
+    print("Processing...")
     if OUTPUT_FOLDER not in os.listdir('.'):
         os.mkdir(OUTPUT_FOLDER)
 
@@ -249,3 +250,4 @@ if __name__ == "__main__":
             break
     video_reader.release()
     video_writer.release()
+    print("Done! Look for the results in output/.")
