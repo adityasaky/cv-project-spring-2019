@@ -2,9 +2,19 @@ import cv2
 import numpy as np
 import copy
 import os
+import sys
 from landmarking import solve_landmarks
 from media_functions import resize_image, generate_binary_image, make_transparent, apply_backward_mapping, apply_backward_mapping_eye, get_all_video_frames
 from constants import DATA_FOLDER, CLIPART_FOLDER, OUTPUT_FOLDER
+
+
+if len(sys.argv) > 1:
+    CLIPART_FILE = sys.argv[2]
+else:
+    CLIPART_FILE = "monocle"
+    print("You can pass one of {glasses, monocle, hat, pin} as an argument for the clipart.")
+    print("By default, monocle is used.")
+    print("python main.py [--clipart {glasses, monocle, hat, pin}]")
 
 
 # _in_cluster_neighbor is a helper function to check if a pixel belongs to a particular cluster. 
@@ -204,7 +214,7 @@ if __name__ == "__main__":
 
     cv2.imwrite(os.path.join(OUTPUT_FOLDER, "scaled_result.png"), transformed_image)
 
-    clipart_name = "monocle"
+    clipart_name = CLIPART_FILE
     clipart = cv2.imread(os.path.join(CLIPART_FOLDER, clipart_name + ".png"), cv2.IMREAD_UNCHANGED)
     if clipart_name + ".meta" in os.listdir(CLIPART_FOLDER):
         meta_reader = open(os.path.join(CLIPART_FOLDER, clipart_name + ".meta"), "r")
@@ -214,7 +224,7 @@ if __name__ == "__main__":
     else:
         clipart_meta = (0,0, False)
 
-    file_path = os.path.join(DATA_FOLDER, "video_2_compressed.mov")
+    file_path = os.path.join(DATA_FOLDER, "video_1_compressed_long.mov")
     video_reader = cv2.VideoCapture(file_path)
 
     video_size = (int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH)),
