@@ -7,7 +7,8 @@ from media_functions import resize_image, generate_binary_image, make_transparen
 from constants import DATA_FOLDER, CLIPART_FOLDER, OUTPUT_FOLDER
 
 
-def in_cluster_neighbor(pixel, cluster):
+# _in_cluster_neighbor is a helper function to check if a pixel belongs to a particular cluster. 
+def _in_cluster_neighbor(pixel, cluster):
     for member in cluster[::-1]:
         if abs(pixel[0] - member[0]) <= 2 and abs(pixel[1] - member[1]) <= 2:
             return True
@@ -22,7 +23,7 @@ def get_pixel_clusters(binary_image, merge_clusters = False):
         if current_cluster not in clusters:
             clusters[current_cluster] = [p]
             continue
-        if in_cluster_neighbor(p, clusters[current_cluster]):
+        if _in_cluster_neighbor(p, clusters[current_cluster]):
             clusters[current_cluster].append(p)
         else:
             current_cluster += 1
@@ -31,6 +32,9 @@ def get_pixel_clusters(binary_image, merge_clusters = False):
         clusters = merge_connected_clusters(clusters)
     return clusters
 
+
+# merge_connected_clusters checks for 8-neighbour connectivity and merges pixels
+# together into a common cluster.
 def merge_connected_clusters(clusters):
     current = 0
     while current < len(clusters):
@@ -40,10 +44,10 @@ def merge_connected_clusters(clusters):
             if comparison >= len(clusters):
                 break
             for pixel in clusters[current]:
-                if in_cluster_neighbor(pixel, clusters[comparison]):
+                if _in_cluster_neighbor(pixel, clusters[comparison]):
                     clusters[comparison].extend(clusters[current])
                     clusters.pop(current)
-                    clusters = serialize_clusters(clusters)
+                    clusters = _serialize_clusters(clusters)
                     current = -1
                     comparisonBreak = True
                     break
@@ -51,13 +55,17 @@ def merge_connected_clusters(clusters):
         current += 1
     return clusters
 
-def serialize_clusters(clusters):
+
+# _serialize_clusters is a helper function to reorder detected clusters
+# and maintain continuity.
+def _serialize_clusters(clusters):
     index = 0
     result = {}
     for cluster in clusters:
         result[index] = clusters[cluster]
         index += 1
     return result
+
 
 # generate_transformation returns a 3x3 transformation matrix for passed affine
 # transformation values.
@@ -99,7 +107,6 @@ def map_eyes(binary_image, original_image):
                     left_count += 1
         if left_count == right_count:
             if center_col <= original_image.shape[1] / 2:
-                # this is the right eye
                 return cluster_centers_two, 'right'
             else:
                 return cluster_centers_two, 'left'
@@ -112,10 +119,8 @@ def map_eyes(binary_image, original_image):
 
 def map_eyes_bounds(binary_image):
     pixel_clusters = get_pixel_clusters(binary_image, False)
-    print(pixel_clusters)
-    cluster_dimensions = []  # 2 DEFAULT FOR NOW?
+    cluster_dimensions = []
 
-    # MODIFY TO ONLY TAKE ONE EYE IF NEEDED? (current modification: eye distance at 45 pixels apart)
     for cluster in list(pixel_clusters.values())[0:2]:
         cluster = np.asarray(cluster)
         min_xy = np.min(cluster, axis=0)
@@ -124,47 +129,29 @@ def map_eyes_bounds(binary_image):
     # sort by lowest y value min, to get topmost clusters
     cluster_dimensions = sorted(cluster_dimensions, key=lambda i: i[0])
 
-    # if np.linalg.norm(cluster_centers[0][1][1] - cluster_centers[1][1][1]) > 45:
-    #     cluster_centers.pop()
-
-    print(cluster_dimensions)
     return cluster_dimensions
 
-def clipart_on_eyes(image, eyes, clipart, position=None, meta = (0,0), previous_anchor = None):
+def clipart_on_eyes(image, eyes, clipart, position=None, meta = (0,0, False), previous_anchor = None):
     eye_width = np.linalg.norm(eyes[0] - eyes[1]) if len(eyes) == 2 else 100
     eye_width = eye_width if eye_width > 40 else 100
 
     clipart1 = resize_image(copy.deepcopy(clipart), np.int(eye_width*1.5))
     image = copy.deepcopy(image)
-    # clipart_eyemark_y = clipart1.shape[0] / 2
-    # clipart_eyemark_x = [np.int(clipart1.shape[1] * 0.25), np.int(clipart1.shape[0] * 0.75)]
-
-    # clipart_landmarks = [(clipart_eyemark_y, clipart_eyemark_x[0]), (clipart_eyemark_y, (clipart_eyemark_x[0] + clipart_eyemark_x[1])/2), (clipart_eyemark_y, clipart_eyemark_x[1])]
-    # target_landmarks = [eyes[0], np.add(eyes[0], eyes[1])/2, eyes[1]]
-    # clipart_transformation = solve_landmarks(clipart_landmarks, target_landmarks)
-    # clipart1 = apply_backward_mapping(clipart1, clipart_transformation)
 
     min_y, min_x = np.subtract(eyes[0], (clipart1.shape[0] / 2, clipart1.shape[1] / 6))
     min_x, min_y = np.int(min_x + meta[0]), np.int(min_y + meta[1])
-    if position == 'right':
+    if not meta[2] and position == 'right':
         min_x -= 100
-
-    if previous_anchor is None or (abs(previous_anchor[0] - min_y) < 75 and abs(previous_anchor[1] - min_x) < 100):
+    if previous_anchor is None or (abs(previous_anchor[0] - min_y) < 75 and abs(previous_anchor[1] - min_x) < 200):
         previous_anchor = (min_y, min_x)
     else:
          (min_y, min_x) = previous_anchor
-    # max_x, max_y = np.add((min_x, min_y), (clipart1.shape[0], clipart1.shape[1]))
-    # max_x, max_y = np.int(max_x), np.int(max_y)
 
-    # transformed_image[min_x:max_x, min_y:max_y] = clipart1
     for x in range(0, clipart1.shape[1]):
         for y in range(0, clipart1.shape[0]):
-            # transformed_image[min_y + y, min_x + x] = [0,0,255,1]
             if clipart1[y,x][3] > 100 and 0 <= (min_y + y) < image.shape[0] and 0 <= (min_x + x) < image.shape[1]:
                 image[min_y + y, min_x + x] = clipart1[y, x][0:3]
 
-    # cv2.imwrite(os.path.join(OUTPUT_FOLDER, "cliparted_image_temp1.png"), transformed_image)
-    # print(eyes, (min_y, min_x), eye_width)
     return image, previous_anchor
 
 
@@ -172,22 +159,20 @@ if __name__ == "__main__":
     if OUTPUT_FOLDER not in os.listdir('.'):
         os.mkdir(OUTPUT_FOLDER)
 
-    image = cv2.imread(os.path.join(DATA_FOLDER, "test_clusters.jpg"))
+    image = cv2.imread(os.path.join(DATA_FOLDER, "image_4.jpeg"))
 
     resized_image = resize_image(image)
     greyscale_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
-    binary_image = generate_binary_image(greyscale_image, 45)
+    binary_image = generate_binary_image(greyscale_image, 50)
     eye_dimensions = map_eyes_bounds(binary_image)
 
     transformed_image = copy.deepcopy(resized_image)
-    overlaid_image = copy.deepcopy(resized_image)
 
-    ts = 2
+    ts = 3
 
     for i in range(len(eye_dimensions)):
-
         # if box size is small, manually make it a little larger
-        if eye_dimensions[i][1] - eye_dimensions[i][0] < 2 or eye_dimensions[i][3] - eye_dimensions[i][2] < 2:
+        if eye_dimensions[i][1] - eye_dimensions[i][0] < 3 or eye_dimensions[i][3] - eye_dimensions[i][2] < 3:
             eye_dimensions[i][0] -= 1
             eye_dimensions[i][1] += 1
             eye_dimensions[i][2] -= 1
@@ -195,7 +180,7 @@ if __name__ == "__main__":
 
         # get centers of both cropped source and transformed images (will be the same)
         center_y = int((eye_dimensions[i][0] + eye_dimensions[i][1]) / 2)
-        center_x = int((eye_dimensions[i][2] + eye_dimensions[i][2]) / 2)
+        center_x = int((eye_dimensions[i][2] + eye_dimensions[i][3]) / 2)
 
         # calculate range of scaled transformed image; why does it look better with + 1?
         # (ts = 3 and no +1 looks messed up)
@@ -213,53 +198,41 @@ if __name__ == "__main__":
                      eye_dimensions[i][2]:int(eye_dimensions[i][3]) + 1]
         output_image = transformed_image[min_y:max_y + 1, min_x:max_x + 1]
 
-        # no translation - that is applied through indices later
-        # consider how translation up and left would not work when going forward
         transformation = generate_transformation(ts, 0, 0, 0, ts, 0)
-
-        # transformed_image[min_y:max_y, min_x:max_x] = \
-        #     apply_backward_mapping_eye(eye_region, eye_dimensions[i][0] - min_y, eye_dimensions[i][2] - min_x,
-        #                                transformation, output_image)
         transformed_image[min_y:max_y + 1, min_x:max_x + 1] = \
             apply_backward_mapping_eye(eye_region, transformation, output_image)
-        #overlaid_image = draw_rectangle(overlaid_image, [np.int(eye[0]), np.int(eye[1])])
 
-    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), overlaid_image)
-    # cv2.imshow("Image", transformed_image)
-    # cv2.waitKey()
+    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), transformed_image)
 
-    clipart_name = "hat"
+    clipart_name = "monocle"
     clipart = cv2.imread(os.path.join(CLIPART_FOLDER, clipart_name + ".png"), cv2.IMREAD_UNCHANGED)
-    meta_reader = open(os.path.join(CLIPART_FOLDER, clipart_name + ".meta"), "r")
-    if meta_reader:
+    if clipart_name + ".meta" in os.listdir(CLIPART_FOLDER):
+        meta_reader = open(os.path.join(CLIPART_FOLDER, clipart_name + ".meta"), "r")
         clipart_meta = (int(meta_reader.readline()), int(meta_reader.readline()))
+        clipart_meta = clipart_meta + (True if meta_reader.readline()[:-1] == "single_eye" else False,)
+        meta_reader.close()
     else:
-        clipart_meta = (0,0)
-    meta_reader.close()
+        clipart_meta = (0,0, False)
 
-    file_path = os.path.join(DATA_FOLDER, "video_1_compressed.mov")
+    file_path = os.path.join(DATA_FOLDER, "video_2_compressed.mov")
     video_reader = cv2.VideoCapture(file_path)
 
     video_size = (int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH)),
             int(video_reader.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
     codec = cv2.VideoWriter_fourcc(*'jpeg')
-    video_writer = cv2.VideoWriter(os.path.join(OUTPUT_FOLDER, "outpy1_flow.mov"), codec, 16, video_size)
+    video_writer = cv2.VideoWriter(os.path.join(OUTPUT_FOLDER, "clipart_overlay_{}.mov".format(clipart_name)), codec, 16, video_size)
 
     all_frames = []
     index = -1
     previous_anchor = None
     while video_reader.isOpened():
         index += 1
-        print("processing frame: ", index)
         frame_check, frame = video_reader.read()
         if frame_check:
             greyscale_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             binary_frame = generate_binary_image(greyscale_frame, 40)
-
             eyes, position = map_eyes(binary_frame, frame)
-            # cv2.imshow("Frame", binary_frame)
-            # cv2.waitKey(0)
             processed_frame, previous_anchor = clipart_on_eyes(frame, eyes, clipart, position, clipart_meta, previous_anchor)
             video_writer.write(processed_frame)
         else:

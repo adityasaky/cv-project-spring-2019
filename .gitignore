@@ -2,5 +2,5 @@
 env*
 .DS_Store
 .vscode
-output
+output*
 *.pyc
