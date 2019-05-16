@@ -200,7 +200,7 @@ if __name__ == "__main__":
         transformed_image[min_y:max_y + 1, min_x:max_x + 1] = \
             apply_backward_mapping_eye(eye_region, transformation, output_image)
 
-    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "image_1.png"), transformed_image)
+    cv2.imwrite(os.path.join(OUTPUT_FOLDER, "scaled_result.png"), transformed_image)
 
     clipart_name = "glasses"
     clipart = cv2.imread(os.path.join(CLIPART_FOLDER, clipart_name + ".png"), cv2.IMREAD_UNCHANGED)
